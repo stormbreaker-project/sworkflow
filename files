@@ -1,4 +1,4 @@
-install.sh
+setup.sh
 src/build.sh
 src/build_vars.sh
 src/help.sh
@@ -6,4 +6,5 @@ src/init.sh
 src/sw_color.sh
 src/sw_functions.sh
 src/version.sh
-tests/build_test.sh
+tests/compile_test.sh
+tests/run_tests.sh

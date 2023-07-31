@@ -19,28 +19,26 @@ check_kernel()
 	local device_config_dir
 	device="$1"
 	device_config_dir="configs"
-	echo "sworkflow: Checking if kernel config exists for $device"
+	log_info "sworkflow: Checking if kernel config exists for $device"
 	if [[ -n $(find -L "$SW_SRC_DIR"/"$device_config_dir" -maxdepth 2 -name "sworkflow.$device.config") ]]; then
 		for dir in $device_config_dir; do
 			for f in $(cd "$SW_SRC_DIR" && test -d "$dir" &&
 				find -L "$SW_SRC_DIR" -maxdepth 4 -name "sworkflow.$device.config" | sort); do
-				echo "sworkflow: Including $f"
+				log_info "sworkflow: Including $f"
 				. "$f" --source-only
 			done
 		done
-		echo "sworkflow: Config for $device found"
 	elif [[ -n $(find -L "$(pwd)" -maxdepth 2 -name "sworkflow.$device.config") ]]; then
 		for dir in $device_config_dir; do
 			for f in $(cd "$(pwd)" && test -d "$dir" &&
 				find -L "$(pwd)" -maxdepth 4 -name "sworkflow.$device.config" | sort); do
-				echo "sworkflow: Including $f"
+				log_info "sworkflow: Including $f"
 				. "$f" --source-only
 			done
 		done
-		echo "sworkflow: sworkflow.$device.config found outside the tree"
 	else
-		echo "error: No config file found"
-		echo "error: Refer to docs for more"
+		log_error "error: No config file found"
+		log_error "error: Refer to docs for more"
 		exit 125
 	fi
 
@@ -49,38 +47,38 @@ check_kernel()
 displayDeviceInfo()
 {
 
-    if [[ $# = 0 ]]; then
-        echo "usage: displayDeviceInfo [target]" >&2
-        return 1
-    fi
+	if [[ $# = 0 ]]; then
+		log_info "usage: displayDeviceInfo [target]" >&2
+		return 1
+	fi
 
-    local DEVICE
-    local TARGET_DEVICE
-    local HOST_OS
-    local HOST_OS_EXTRA
+	local DEVICE
+	local TARGET_DEVICE
+	local HOST_OS
+	local HOST_OS_EXTRA
 
-    DEVICE="$1"
-    TARGET_DEVICE="$DEVICE"
-    HOST_OS="$(uname)"
-    HOST_OS_EXTRA="$(uname -r)"
+	DEVICE="$1"
+	TARGET_DEVICE="$DEVICE"
+	HOST_OS="$(uname)"
+	HOST_OS_EXTRA="$(uname -r)"
 
-    echo "============================================"
-    echo "TARGET_DEVICE=$TARGET_DEVICE"
-    echo "TARGET_ARCH=$device_arch"
-    echo "KERNEL_DEFCONFIG=$kernel_defconfig"
-    echo "KERNEL_DIR=$PWD"
-    echo "HOST_OS=$HOST_OS"
-    echo "HOST_OS_EXTRA=$HOST_OS_EXTRA"
-    echo "HOST_PATH=$PATH"
-    echo "OUT_DIR=out" # HardCode this for now.
-    echo "============================================"
+	log_info "============================================"
+	log_info "TARGET_DEVICE=$TARGET_DEVICE"
+	log_info "TARGET_ARCH=$device_arch"
+	log_info "KERNEL_DEFCONFIG=$kernel_defconfig"
+	log_info "KERNEL_DIR=$PWD"
+	log_info "HOST_OS=$HOST_OS"
+	log_info "HOST_OS_EXTRA=$HOST_OS_EXTRA"
+	log_info "HOST_PATH=$PATH"
+	log_info "OUT_DIR=out" # HardCode this for now.
+	log_info "============================================"
 }
 
 kernel_build()
 {
 	device="$3"
 	check_kernel "$device"
-	echo "sworkflow: Starting Kernel Build!"
+	log_info "sworkflow: Starting Kernel Build!"
 
 	if [[ -z "$(command -v nproc)" ]]; then
 		parallel_threads="$(nproc --all)"
@@ -89,7 +87,7 @@ kernel_build()
 	fi
 
 	if ! is_kernel_root "$PWD"; then
-		echo "error: Execute this command in a kernel tree."
+		log_error "error: Execute this command in a kernel tree."
 		exit 125
 	fi
 
@@ -99,18 +97,18 @@ kernel_build()
 
 	if [[ -n "$cross_compile" ]]; then
 		cross_compile="CROSS_COMPILE=$cross_compile"
-		MAKE+=( "$cross_compile" )
+		MAKE+=("$cross_compile")
 	fi
 
 	if [[ -n "$cross_compile_arm32" ]]; then
 		cross_compile_arm32="CROSS_COMPILE_ARM32=$cross_compile_arm32"
-		MAKE+=( "$cross_compile_arm32" )
+		MAKE+=("$cross_compile_arm32")
 	fi
 
 	if [[ -n "$use_clang" ]]; then
 		cc="CC=clang"
 		clang_triple="CLANG_TRIPLE=aarch64-linux-gnu-"
-		MAKE+=( "$cc"
+		MAKE+=("$cc"
 			"$clang_triple")
 	fi
 
@@ -118,29 +116,29 @@ kernel_build()
 		if [[ -n $kernel_arch ]]; then
 			if [[ -n "$kernel_defconfig" ]]; then
 				if [[ -f arch/"$kernel_arch"/configs/"$kernel_defconfig" ]]; then
-					echo ""
+					log_info ""
 				else
-					echo "error: Device Defconfig not found!"
+					log_error "error: Device Defconfig not found!"
 					exit 22
 				fi
 			else
-				echo "error: Device Defconfig not defined!"
+				log_error "error: Device Defconfig not defined!"
 			fi
 		else
 			if [[ -n "$kernel_defconfig" ]]; then
 				if [[ -f arch/$device_arch/configs/"$kernel_defconfig" ]]; then
-					echo ""
+					log_info ""
 				else
-					echo "error: Device Defconfig not found!"
+					log_error "error: Device Defconfig not found!"
 					exit 22
 				fi
 			else
-				echo "error: Device Defconfig not defined!"
+				log_error "error: Device Defconfig not defined!"
 				exit 22
 			fi
 		fi
 	else
-		echo "error: Device architecture not defined!"
+		log_error "error: Device architecture not defined!"
 		exit 22
 	fi
 
@@ -153,20 +151,20 @@ kernel_build()
 	make O=out -j"$parallel_threads" ARCH="$device_arch" "${MAKE[@]}"
 
 	if [[ -n "$create_dtbo" ]]; then
-		echo "sworkflow: Creating dtbo"
+		log_info "sworkflow: Creating dtbo"
 		dtbo_path="out/arch/$device_arch/boot/dtbo.img"
 		if [[ -f $dtbo_path ]]; then
-			echo "warning: DTBO image already present!"
+			log_warning "warning: DTBO image already present!"
 		else
 			if [[ -n "$dtbo_page_size" ]]; then
 				if [[ -n $dtbo_arch_path ]]; then
 					python3 "$SW_SRC_DIR"/utils/mkdtboimg.py create "out/arch/$device_arch/boot/dtbo.img" --page_size="$dtbo_page_size" "$dtbo_arch_path"
 				else
-					echo "error: kernel DTBO directory not defined!"
+					log_error "error: kernel DTBO directory not defined!"
 					exit 22
 				fi
 			else
-				echo "error: DTBO page size not defined!"
+				log_error "error: DTBO page size not defined!"
 				exit 22
 			fi
 		fi
@@ -176,7 +174,7 @@ kernel_build()
 
 	time=$((end - start))
 	elapsed_time=$(date -d@"$time" -u +%H:%M:%S)
-	echo "-> sworkflow: Execution time: $elapsed_time"
+	log_info "-> sworkflow: Execution time: $elapsed_time"
 }
 
 parse_build_arguments()
@@ -187,10 +185,10 @@ parse_build_arguments()
 
 	while [[ "$#" -gt 0 ]]; do
 		case "$1" in
-		*)
-			echo "error: Invalid Argument"
-			exit 22 # EINVAL
-			;;
+			*)
+				log_error "error: Invalid Argument"
+				exit 22 # EINVAL
+				;;
 		esac
 	done
 }

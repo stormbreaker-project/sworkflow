@@ -6,66 +6,65 @@
 # SPDX-License-Identifier: Apache-2.0 license
 #
 
-## Global Paths
+SWORKFLOW=${SWORKFLOW:-'sw'}
+
+# Global Paths
 
 # SW source directory
-SW_SRC_DIR="$HOME/sworkflow"
-
-# Check for variable
-if [[ -d $SW_SRC_DIR ]]; then
-	echo "warning: Using hardcode directory is not recommended"
-	echo "warning: Refer to https://github.com/danascape/sworkflow/issues/12 for more"
-	echo ""
+if [[ -f '/usr/bin/sw' ]]; then
+	SW_SRC_DIR="/usr/share/sw"
+elif [[ -f $HOME/sworkflow/sw ]]; then
+	SW_SRC_DIR="$HOME/sworkflow"
 else
-	echo "error: SW_SRC_DIR variable not defined!"
-	echo "error: Run setup.sh script and try again."
-	exit 1
+	# SW_SRC_DIR="${SW_SRC_DIR:-"$HOME/.local/sw"}/${SWORKFLOW}"
+	SW_SRC_DIR="$HOME/.local/sw"
 fi
 
-sw() {
+sw()
+{
 	argument="$1"
 
 	case "$argument" in
 		build | b)
 			(
-			. $SW_SRC_DIR/src/build.sh --source-only
+				. $SW_SRC_DIR/src/build.sh --source-only
 
-			kernel_build '' "$@"
+				kernel_build '' "$@"
 
-		)
-		;;
-	help | h)
-		(
-		. $SW_SRC_DIR/src/help.sh --source-only
+			)
+			;;
+		help | h)
+			(
+				. $SW_SRC_DIR/src/help.sh --source-only
 
-		sworkflow_help
-	)
-	;;
-	man | m)
-		(
-		. $SW_SRC_DIR/src/help.sh --source-only
+				sworkflow_help
+			)
+			;;
+		man | m)
+			(
+				. $SW_SRC_DIR/src/help.sh --source-only
 
-		sworkflow_help
-	)
-	;;
-	version | v)
-		(
-		. $SW_SRC_DIR/src/version.sh --source-only
+				sworkflow_help
+			)
+			;;
+		version | v)
+			(
+				. $SW_SRC_DIR/src/version.sh --source-only
 
-		sworkflow_version
-	)
-	;;
-	*)
-		(
-		echo "error: Invalid Option"
-		. $SW_SRC_DIR/src/help.sh --source-only
+				sworkflow_version
+			)
+			;;
+		*)
+			(
+				echo "error: Invalid Option"
+				. $SW_SRC_DIR/src/help.sh --source-only
 
-		sworkflow_help
+				sworkflow_help
 
-	)
-	;;
+			)
+			;;
 
-esac
+	esac
 }
 
 sw "$@"
